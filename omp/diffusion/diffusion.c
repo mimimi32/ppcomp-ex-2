@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-#define NX 20000
-#define NY 20000
+#define NX 15000
+#define NY 15000
 
-float data[2][NY][NX];
+float dens[2][NY][NX];
 
 double time_diff_sec(struct timeval st, struct timeval et)
 {
@@ -24,15 +24,15 @@ void init()
             if (((x-cx)*(x-cx)+(y-cy)*(y-cy)) < rad*rad) {
                 v = 1.0;
             }
-            data[0][y][x] = v;
-            data[1][y][x] = v;
+            dens[0][y][x] = v;
+            dens[1][y][x] = v;
         }
     }
     return;
 }
 
 /* Calculate for one time step */
-/* Input: data[t%2], Output: data[(t+1)%2] */
+/* Input: dens[t%2], Output: dens[(t+1)%2] */
 void calc(int nt)
 {
     int t, x, y;
@@ -43,16 +43,15 @@ void calc(int nt)
 
 #if 1
         printf("step %d\n", t);
-        //fflush(0);
 #endif
     
         for (y = 1; y < NY-1; y++) {
             for (x = 1; x < NX-1; x++) {
-                data[to][y][x] = 0.2 * (data[from][y][x]
-                                        + data[from][y][x-1]
-                                        + data[from][y][x+1]
-                                        + data[from][y-1][x]
-                                        + data[from][y+1][x]);
+                dens[to][y][x] = 0.2 * (dens[from][y][x]
+                                        + dens[from][y][x-1]
+                                        + dens[from][y][x+1]
+                                        + dens[from][y-1][x]
+                                        + dens[from][y+1][x]);
             }
         }
     }
