@@ -10,9 +10,9 @@ double time_diff_sec(struct timeval st, struct timeval et)
     return (double)(et.tv_sec-st.tv_sec)+(et.tv_usec-st.tv_usec)/1000000.0;
 }
 
-// compute summation of v of all threads
+// compute sum of v of all threads
 // the result is stored in *dp, after all threads finish
-__device__ void summation(double *dp, int n, double v)
+__device__ void calc_sum(double *dp, int n, double v)
 {
     __shared__ double vs[BS]; // vs[] is on shared memory of this thread block
     int tid = threadIdx.x;
@@ -31,6 +31,7 @@ __device__ void summation(double *dp, int n, double v)
     // now sum in thread block is at vs[0]
     // final reduction
     if (tid == 0) {
+        // do *dp += vs[0] in atomic
         atomicAdd(dp, vs[0]);
     }
 
@@ -55,8 +56,8 @@ __global__ void pi_kernel(int n, double *dp)
         v = 0.0;
     }
 
-    // summation of v
-    summation(dp, n, v);
+    // compute sum of v
+    calc_sum(dp, n, v);
 }
 
 double pi(int n, double *dp)
@@ -87,7 +88,7 @@ int main(int argc, char *argv[])
 
     n = atoi(argv[1]);
 
-    // temporal device buffer for summation
+    // temporal device buffer for calc_sum
     cudaMalloc((void**)&dp, sizeof(double));
     
     /* Repeat same computation for 5 times */
