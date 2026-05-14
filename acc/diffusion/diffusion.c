@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/time.h>
+
+#define OUTPUT_DIR "diffusion_output"
 
 #define NX 150
 #define NY 150
@@ -36,7 +39,7 @@ void init()
 void write_vtk(int step, int buf)
 {
     char filename[64];
-    snprintf(filename, sizeof(filename), "diffusion_%04d.vtk", step);
+    snprintf(filename, sizeof(filename), OUTPUT_DIR "/diffusion_%04d.vtk", step);
     FILE *fp = fopen(filename, "wb");
     if (!fp) { perror(filename); return; }
 
@@ -104,6 +107,8 @@ int  main(int argc, char *argv[])
     if (argc >= 3) write_interval = atoi(argv[2]);
 
     printf("nt=%d  write_interval=%d\n", nt, write_interval);
+
+    mkdir(OUTPUT_DIR, 0755);
 
     init();
     write_vtk(0, 0);
