@@ -76,22 +76,28 @@ void calc(int nt, int write_interval)
 {
     int t, x, y;
 
-    for (t = 0; t < nt; t++) {
-        int from = t % 2;
-        int to   = (t + 1) % 2;
+    #pragma acc data copy(dens)
+    {
+        for (t = 0; t < nt; t++) {
+            int from = t % 2;
+            int to   = (t + 1) % 2;
 
-        for (y = 1; y < NY-1; y++) {
-            for (x = 1; x < NX-1; x++) {
-                dens[to][y][x] = 0.2 * (dens[from][y][x]
-                                        + dens[from][y][x-1]
-                                        + dens[from][y][x+1]
-                                        + dens[from][y-1][x]
-                                        + dens[from][y+1][x]);
+            #pragma acc parallel loop collapse(2)
+            for (y = 1; y < NY-1; y++) {
+                for (x = 1; x < NX-1; x++) {
+                    dens[to][y][x] = 0.2 * (dens[from][y][x]
+                                            + dens[from][y][x-1]
+                                            + dens[from][y][x+1]
+                                            + dens[from][y-1][x]
+                                            + dens[from][y+1][x]);
+                }
+            }
+
+            if ((t + 1) % write_interval == 0) {
+                #pragma acc update self(dens[to:1])
+                write_vtk(t + 1, to);
             }
         }
-
-        if ((t + 1) % write_interval == 0)
-            write_vtk(t + 1, to);
     }
 
     return;
