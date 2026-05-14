@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 
 #define NX 15000
@@ -29,6 +30,42 @@ void init()
         }
     }
     return;
+}
+
+/* Write density field to VTK legacy binary format (big-endian as required by VTK spec) */
+void write_vtk(int step, int buf)
+{
+    char filename[64];
+    snprintf(filename, sizeof(filename), "diffusion_%04d.vtk", step);
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) { perror(filename); return; }
+
+    fprintf(fp, "# vtk DataFile Version 3.0\n");
+    fprintf(fp, "Diffusion t=%d\n", step);
+    fprintf(fp, "BINARY\n");
+    fprintf(fp, "DATASET STRUCTURED_POINTS\n");
+    fprintf(fp, "DIMENSIONS %d %d 1\n", NX, NY);
+    fprintf(fp, "ORIGIN 0.0 0.0 0.0\n");
+    fprintf(fp, "SPACING 1.0 1.0 1.0\n");
+    fprintf(fp, "POINT_DATA %d\n", NX * NY);
+    fprintf(fp, "SCALARS density float 1\n");
+    fprintf(fp, "LOOKUP_TABLE default\n");
+
+    float row[NX];
+    for (int y = 0; y < NY; y++) {
+        for (int x = 0; x < NX; x++) {
+            float v = dens[buf][y][x];
+            unsigned int u;
+            memcpy(&u, &v, 4);
+            /* swap to big-endian */
+            u = ((u & 0xFF000000u) >> 24) | ((u & 0x00FF0000u) >> 8)
+              | ((u & 0x0000FF00u) << 8)  | ((u & 0x000000FFu) << 24);
+            memcpy(&row[x], &u, 4);
+        }
+        fwrite(row, sizeof(float), NX, fp);
+    }
+    fclose(fp);
+    printf("Written %s\n", filename);
 }
 
 /* Calculate for one time step */
@@ -69,12 +106,15 @@ int  main(int argc, char *argv[])
     }
 
     init();
+    write_vtk(0, 0);
 
     gettimeofday(&t1, NULL);
 
     calc(nt);
 
     gettimeofday(&t2, NULL);
+
+    write_vtk(nt, nt % 2);
 
     {
         double sec;
