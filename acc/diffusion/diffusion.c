@@ -68,20 +68,15 @@ void write_vtk(int step, int buf)
     printf("Written %s\n", filename);
 }
 
-/* Calculate for one time step */
-/* Input: dens[t%2], Output: dens[(t+1)%2] */
-void calc(int nt)
+/* Calculate nt time steps, writing VTK every write_interval steps */
+void calc(int nt, int write_interval)
 {
     int t, x, y;
 
     for (t = 0; t < nt; t++) {
-        int from = t%2;
-        int to = (t+1)%2;
+        int from = t % 2;
+        int to   = (t + 1) % 2;
 
-#if 1
-        printf("step %d\n", t);
-#endif
-    
         for (y = 1; y < NY-1; y++) {
             for (x = 1; x < NX-1; x++) {
                 dens[to][y][x] = 0.2 * (dens[from][y][x]
@@ -91,6 +86,9 @@ void calc(int nt)
                                         + dens[from][y+1][x]);
             }
         }
+
+        if ((t + 1) % write_interval == 0)
+            write_vtk(t + 1, to);
     }
 
     return;
@@ -99,22 +97,26 @@ void calc(int nt)
 int  main(int argc, char *argv[])
 {
     struct timeval t1, t2;
-    int nt = 20; /* number of time steps */
-  
-    if (argc >= 2) { /* if an argument is specified */
-        nt = atoi(argv[1]);
-    }
+    int nt = 200;            /* number of time steps */
+    int write_interval = 10; /* write VTK every N steps */
+
+    if (argc >= 2) nt             = atoi(argv[1]);
+    if (argc >= 3) write_interval = atoi(argv[2]);
+
+    printf("nt=%d  write_interval=%d\n", nt, write_interval);
 
     init();
     write_vtk(0, 0);
 
     gettimeofday(&t1, NULL);
 
-    calc(nt);
+    calc(nt, write_interval);
 
     gettimeofday(&t2, NULL);
 
-    write_vtk(nt, nt % 2);
+    /* write final step if not already covered by the interval */
+    if (nt % write_interval != 0)
+        write_vtk(nt, nt % 2);
 
     {
         double sec;
