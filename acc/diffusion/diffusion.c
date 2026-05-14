@@ -3,8 +3,8 @@
 #include <string.h>
 #include <sys/time.h>
 
-#define NX 15000
-#define NY 15000
+#define NX 150
+#define NY 150
 
 float dens[2][NY][NX];
 
