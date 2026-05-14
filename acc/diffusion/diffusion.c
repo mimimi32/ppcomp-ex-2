@@ -6,8 +6,8 @@
 
 #define OUTPUT_DIR "diffusion_output"
 
-#define NX 150
-#define NY 150
+#define NX 150000
+#define NY 150000
 
 float dens[2][NY][NX];
 
@@ -93,7 +93,7 @@ void calc(int nt, int write_interval)
                 }
             }
 
-            if ((t + 1) % write_interval == 0) {
+            if (write_interval > 0 && (t + 1) % write_interval == 0) {
                 #pragma acc update self(dens[to:1])
                 write_vtk(t + 1, to);
             }
@@ -114,10 +114,12 @@ int  main(int argc, char *argv[])
 
     printf("nt=%d  write_interval=%d\n", nt, write_interval);
 
-    mkdir(OUTPUT_DIR, 0755);
+    if (write_interval > 0)
+        mkdir(OUTPUT_DIR, 0755);
 
     init();
-    write_vtk(0, 0);
+    if (write_interval > 0)
+        write_vtk(0, 0);
 
     gettimeofday(&t1, NULL);
 
@@ -126,7 +128,7 @@ int  main(int argc, char *argv[])
     gettimeofday(&t2, NULL);
 
     /* write final step if not already covered by the interval */
-    if (nt % write_interval != 0)
+    if (write_interval > 0 && nt % write_interval != 0)
         write_vtk(nt, nt % 2);
 
     {
